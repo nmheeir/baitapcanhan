@@ -112,3 +112,38 @@ export async function sendResetPasswordEmail(email: string, resetToken: string):
     return false;
   }
 }
+
+/**
+ * Gửi email chứa mật khẩu mới
+ */
+export async function sendNewPasswordEmail(email: string, newPassword: string): Promise<boolean> {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || "noreply@yourapp.com",
+      to: email,
+      subject: "Mật khẩu mới cho tài khoản của bạn",
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; background: #f9f9f9; border-radius: 8px;">
+          <h2 style="color: #333; text-align: center;">Mật khẩu mới đã được tạo</h2>
+          <p>Chào bạn,</p>
+          <p>Chúng tôi đã tạo một mật khẩu mới cho tài khoản của bạn theo yêu cầu.</p>
+          <p style="margin: 20px 0; font-size: 16px; font-weight: bold; text-align: center; padding: 10px; background: #eee; border-radius: 5px;">
+            ${newPassword}
+          </p>
+          <p>Vui lòng đăng nhập bằng mật khẩu này và đổi mật khẩu ngay sau khi đăng nhập để đảm bảo an toàn.</p>
+          <p style="color: #666; font-size: 14px; margin-top: 30px;">
+            Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng liên hệ với bộ phận hỗ trợ để được trợ giúp.
+          </p>
+        </div>
+      `,
+    };
+
+    // Gửi email
+    await transporter.sendMail(mailOptions);
+    console.log("New password email sent to:", email);
+    return true;
+  } catch (error) {
+    console.error("Error sending new password email:", error);
+    return false;
+  }
+}

@@ -31,12 +31,13 @@ export async function comparePassword(
  */
 export async function generateToken(payload: {
   userId: string;
+  username: string;
   email: string;
 }): Promise<string> {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d") // bạn có thể đổi sang process.env.JWT_EXPIRES_IN
+    .setExpirationTime("7d") // hoặc process.env.JWT_EXPIRES_IN
     .sign(secret);
 }
 

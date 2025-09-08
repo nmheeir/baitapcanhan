@@ -6,12 +6,12 @@ import Link from 'next/link';
 import PasswordInput from "@/components/password-input";
 
 /**
- * Trang đăng nhập
+ * Trang đăng nhập bằng username + password
  */
 export default function LoginPage () {
   const router = useRouter();
   const [formData, setFormData] = useState( {
-    email: '',
+    username: '',
     password: '',
   } );
   const [loading, setLoading] = useState( false );
@@ -75,29 +75,41 @@ export default function LoginPage () {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="rounded-md shadow-sm space-y-4">
+            {/* Username input */}
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Tên đăng nhập
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Địa chỉ email"
-                value={formData.email}
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Tên đăng nhập"
+                value={formData.username}
                 onChange={handleChange}
               />
             </div>
-            <PasswordInput
-              value={formData.password}
-              onChange={handleChange}
-            />
+
+            {/* Password input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Mật khẩu
+              </label>
+              <PasswordInput
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Mật khẩu"
+              />
+            </div>
           </div>
 
+          {/* Forgot password link */}
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <Link
@@ -116,6 +128,7 @@ export default function LoginPage () {
             </div>
           )}
 
+          {/* Submit button */}
           <div>
             <button
               type="submit"

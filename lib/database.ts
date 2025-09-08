@@ -13,36 +13,18 @@ const pool = new Pool({
 // Interface cho User
 export interface User {
   id: string;
+  username: string;
   email: string;
+  phone?: string | null;
   password: string;
   is_verified: boolean;
-  verification_token?: string;
-  reset_token?: string;
-  reset_token_expires?: Date;
+  verification_token?: string | null;
+  reset_token?: string | null;
+  reset_token_expires?: Date | null;
   created_at: Date;
   updated_at: Date;
 }
 
-// Mock data cho development (thay thế PostgreSQL trong WebContainer)
-let mockUsers: User[] = [];
-
-/**
- * Tạo bảng users trong PostgreSQL
- * SQL để chạy trong database thật:
- */
-export const createUsersTable = `
-  CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    is_verified BOOLEAN DEFAULT FALSE,
-    verification_token VARCHAR(255),
-    reset_token VARCHAR(255),
-    reset_token_expires TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`;
 
 /**
  * Tìm user theo email
@@ -57,6 +39,23 @@ export async function findUserByEmail(email: string): Promise<User | null> {
     throw error;
   }
 }
+
+/**
+ * Tìm user theo username
+ */
+export async function findUserByUsername(username: string): Promise<User | null> {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("Error finding user by username:", error);
+    throw error;
+  }
+}
+
 
 /**
  * Tìm user theo ID
@@ -76,22 +75,33 @@ export async function findUserById(id: string): Promise<User | null> {
  * Tạo user mới
  */
 export async function createUser(userData: {
+  username: string;
   email: string;
+  phone?: string; // phone có thể null
   password: string;
   verification_token: string;
 }): Promise<User> {
   try {
-    // Trong production:
     const result = await pool.query(
-      'INSERT INTO users (email, password, verification_token) VALUES ($1, $2, $3) RETURNING *',
-      [userData.email, userData.password, userData.verification_token]
+      `INSERT INTO users (username, email, phone, password, verification_token) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING *`,
+      [
+        userData.username,
+        userData.email,
+        userData.phone || null,
+        userData.password,
+        userData.verification_token,
+      ]
     );
+
     return result.rows[0];
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error("Error creating user:", error);
     throw error;
   }
 }
+
 
 /**
  * Cập nhật trạng thái verified của user
@@ -161,5 +171,22 @@ export async function updatePassword(userId: string, newPassword: string): Promi
     throw error;
   }
 }
+
+/**
+ * Cập nhật mật khẩu mới cho user theo email
+ */
+export async function updateUserPassword(email: string, newPassword: string): Promise<boolean> {
+  try {
+    const result = await pool.query(
+      'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2 RETURNING *',
+      [newPassword, email]
+    );
+    return result.rowCount > 0;
+  } catch (error) {
+    console.error('Error updating user password:', error);
+    throw error;
+  }
+}
+
 
 export { pool };

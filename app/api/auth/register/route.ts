@@ -1,7 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createUser, findUserByEmail } from '@/lib/database';
-import { hashPassword, isValidEmail, isValidPassword, generateVerificationToken } from '@/lib/auth';
-import { sendVerificationEmail } from '@/lib/email';
+import { NextRequest, NextResponse } from "next/server";
+import {
+  createUser,
+  findUserByEmail,
+  findUserByUsername,
+} from "@/lib/database";
+import {
+  hashPassword,
+  isValidEmail,
+  isValidPassword,
+  generateVerificationToken,
+} from "@/lib/auth";
+import { sendVerificationEmail } from "@/lib/email";
 
 /**
  * API endpoint để đăng ký tài khoản mới
@@ -9,22 +18,28 @@ import { sendVerificationEmail } from '@/lib/email';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, confirmPassword } = await request.json();
+    const { username, email, phone, password, confirmPassword } =
+      await request.json();
 
-    // Validate input
-    if (!email || !password || !confirmPassword) {
+    // Xác thực input cơ bản
+    if (!username || !email || !password || !confirmPassword) {
       return NextResponse.json(
-        { error: 'Vui lòng điền đầy đủ thông tin' },
+        { error: "Vui lòng điền đầy đủ thông tin" },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    if (!isValidEmail(email)) {
+    // Validate username
+    if (username.length < 3) {
       return NextResponse.json(
-        { error: 'Email không hợp lệ' },
+        { error: "Tên đăng nhập phải có ít nhất 3 ký tự" },
         { status: 400 }
       );
+    }
+
+    // Validate email
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: "Email không hợp lệ" }, { status: 400 });
     }
 
     // Validate password
@@ -36,19 +51,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password confirmation
+    // Kiểm tra confirm password
     if (password !== confirmPassword) {
       return NextResponse.json(
-        { error: 'Mật khẩu xác nhận không khớp' },
+        { error: "Mật khẩu xác nhận không khớp" },
         { status: 400 }
       );
     }
 
-    // Check if user already exists
+    // Kiểm tra email tồn tại chưa
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Email này đã được đăng ký' },
+        { error: "Email này đã được đăng ký" },
+        { status: 409 }
+      );
+    }
+
+    // Kiểm tra username tồn tại chưa
+    const existingUsername = await findUserByUsername(username);
+    if (existingUsername) {
+      return NextResponse.json(
+        { error: "Tên đăng nhập đã có người sử dụng" },
         { status: 409 }
       );
     }
@@ -59,37 +83,39 @@ export async function POST(request: NextRequest) {
     // Generate verification token
     const verificationToken = generateVerificationToken();
 
-    // Create user
+    // Tạo user
     const newUser = await createUser({
+      username,
       email,
+      phone,
       password: hashedPassword,
       verification_token: verificationToken,
     });
 
-    // Send verification email
+    // Gửi email xác thực
     const emailSent = await sendVerificationEmail(email, verificationToken);
-    
     if (!emailSent) {
-      console.error('Failed to send verification email');
-      // Không return error ở đây vì user đã được tạo thành công
+      console.error("❌ Không gửi được email xác thực");
     }
 
     return NextResponse.json(
       {
-        message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+        message:
+          "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.",
         user: {
           id: newUser.id,
+          username: newUser.username,
           email: newUser.email,
+          phone: newUser.phone,
           is_verified: newUser.is_verified,
         },
       },
       { status: 201 }
     );
-
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error("❌ Registration error:", error);
     return NextResponse.json(
-      { error: 'Có lỗi xảy ra trong quá trình đăng ký' },
+      { error: "Có lỗi xảy ra trong quá trình đăng ký" },
       { status: 500 }
     );
   }

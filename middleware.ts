@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Các routes cần bảo vệ (yêu cầu đăng nhập)
-  const protectedRoutes = ['/dashboard', '/profile'];
+  const protectedRoutes = ['/home', '/profile'];
   
   // Các routes chỉ dành cho guest (chưa đăng nhập)
   const guestOnlyRoutes = ['/auth/login', '/auth/register'];
@@ -30,7 +30,7 @@ export function middleware(request: NextRequest) {
   // Nếu đã đăng nhập mà truy cập guest-only routes
   if (guestOnlyRoutes.some(route => pathname.startsWith(route))) {
     if (user) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/home', request.url));
     }
   }
 
@@ -41,8 +41,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Bảo vệ dashboard và profile
-    '/dashboard/:path*',
-    '/profile/:path*',
+    '/home/:path*',
     // Guest-only routes
     '/auth/login',
     '/auth/register',

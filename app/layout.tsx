@@ -1,4 +1,3 @@
-import { initDb } from "@/lib/database";
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
