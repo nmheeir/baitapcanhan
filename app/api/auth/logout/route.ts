@@ -13,13 +13,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Xóa auth cookie
-    response.cookies.set('auth-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 0, // Expire immediately
-      path: '/',
-    });
+    response.cookies.delete('auth-token');
 
     return response;
 

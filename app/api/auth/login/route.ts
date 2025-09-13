@@ -1,9 +1,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByEmail, findUserByUsername } from '@/lib/database';
+import { findUserByEmail, findUserByUsername, pool, resetLoginAttempts, updateLoginFail } from '@/lib/database';
 import { comparePassword, generateToken, isValidEmail } from '@/lib/auth';
 
 export const runtime = "nodejs";
+
+const MAX_ATTEMPTS = 3;
+const LOCK_TIME_MINUTES = 15;
+
 
 /**
  * API endpoint để đăng nhập bằng username
@@ -38,13 +42,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    
+    if (user.locked_until && new Date(user.locked_until) > new Date()) {
+      return NextResponse.json(
+        { error: "🚫 Tài khoản bị khóa. Vui lòng thử lại sau 15 phút." },
+        { status: 403 }
+      );
+    }
+
     // Check password
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: "Tên đăng nhập hoặc mật khẩu không đúng" },
-        { status: 401 }
-      );
+      const attempts = user.failed_attempts + 1;
+
+      if (attempts >= MAX_ATTEMPTS) {
+        // Khóa tài khoản
+        const lockedUntil = new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000);
+        await updateLoginFail(user.id, MAX_ATTEMPTS, lockedUntil);
+
+        return NextResponse.json(
+          { error: `Bạn đã nhập sai quá ${MAX_ATTEMPTS} lần. Tài khoản bị khóa trong ${LOCK_TIME_MINUTES} phút.` },
+          { status: 403 }
+        );
+      } else {
+        // Cập nhật số lần sai
+        await updateLoginFail(user.id, attempts, null);
+        const remaining = MAX_ATTEMPTS - attempts;
+        return NextResponse.json(
+          { error: `Sai mật khẩu. Bạn còn ${remaining} lần thử.` },
+          { status: 401 }
+        );
+      }
     }
 
     // Check if email is verified
@@ -59,9 +87,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Nếu đăng nhập thành công -> reset lại attempts
+    await resetLoginAttempts(user.id);
+
     // Generate JWT token
     const token = await generateToken({
       userId: user.id,
+      roleId: user.role_id,
       username: user.username,
       email: user.email,
     });

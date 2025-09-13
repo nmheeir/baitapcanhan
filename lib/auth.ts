@@ -31,6 +31,7 @@ export async function comparePassword(
  */
 export async function generateToken(payload: {
   userId: string;
+  roleId: string;
   username: string;
   email: string;
 }): Promise<string> {

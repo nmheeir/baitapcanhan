@@ -12,18 +12,24 @@ const pool = new Pool({
 
 // Interface cho User
 export interface User {
-  id: string;
+  id: string;                     // UUID
   username: string;
   email: string;
+  password: string;                // hashed password
+  full_name?: string | null;
+  student_id?: string | null;
   phone?: string | null;
-  password: string;
+  role_id: string;                 // FK -> Roles.id (UUID)
   is_verified: boolean;
   verification_token?: string | null;
   reset_token?: string | null;
   reset_token_expires?: Date | null;
   created_at: Date;
   updated_at: Date;
+  locked_until: Date;
+  failed_attempts: number;
 }
+
 
 
 /**
@@ -74,24 +80,32 @@ export async function findUserById(id: string): Promise<User | null> {
 /**
  * Tạo user mới
  */
+
+const DEFAULT_ROLE_ID = "66b0f2b4-02ba-4837-be1d-fae2b79f73e6";
+
 export async function createUser(userData: {
   username: string;
   email: string;
   phone?: string; // phone có thể null
   password: string;
+  role_id?: string;
   verification_token: string;
 }): Promise<User> {
   try {
+    const roleId = userData.role_id || DEFAULT_ROLE_ID;
+
     const result = await pool.query(
-      `INSERT INTO users (username, email, phone, password, verification_token) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING *`,
+      `INSERT INTO users (
+        username, email, phone, password, verification_token, role_id
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *`,
       [
         userData.username,
         userData.email,
         userData.phone || null,
         userData.password,
         userData.verification_token,
+        roleId,
       ]
     );
 
@@ -187,6 +201,21 @@ export async function updateUserPassword(email: string, newPassword: string): Pr
     throw error;
   }
 }
+
+export async function updateLoginFail(userId: string, attempts: number, lockedUntil: Date | null) {
+  await pool.query(
+    "UPDATE Users SET failed_attempts = $1, locked_until = $2 WHERE id = $3",
+    [attempts, lockedUntil, userId]
+  );
+}
+
+export async function resetLoginAttempts(userId: string) {
+  await pool.query(
+    "UPDATE Users SET failed_attempts = 0, locked_until = NULL WHERE id = $1",
+    [userId]
+  );
+}
+
 
 
 export { pool };

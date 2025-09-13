@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init:db": "tsx utils/init-db.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -79,6 +80,7 @@
   },
   "devDependencies": {
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
 }
