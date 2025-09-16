@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  generateVerificationToken,
+  hashPassword,
+} from "@/lib/auth";
 import {
   createUser,
   findUserByEmail,
   findUserByUsername,
 } from "@/lib/database";
-import {
-  hashPassword,
-  isValidEmail,
-  isValidPassword,
-  generateVerificationToken,
-} from "@/lib/auth";
 import { sendVerificationEmail } from "@/lib/email";
+import { isValidEmail, isValidPassword } from "@/lib/validate";
+import { NextRequest, NextResponse } from "next/server";
 
 /**
  * API endpoint để đăng ký tài khoản mới

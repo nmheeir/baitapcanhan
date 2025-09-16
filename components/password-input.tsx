@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Input } from "./ui/input";
 
 interface PasswordInputProps {
   id?: string;
@@ -26,7 +27,7 @@ export default function PasswordInput({
         {placeholder}
       </label>
 
-      <input
+      <Input
         id={id}
         name={name}
         type={showPassword ? "text" : "password"}
